@@ -20,6 +20,6 @@ def get_most_tracks(token, artists_list, tracks_count_per_artist):
             if i < len(artist_tracks_ids):
                 key, value = list(artist_tracks_ids.items())[i]
                 dict_tracks_weaved[key] = value
-    flat_tracks_ids = list(dict_tracks_weaved)
-    print(flat_tracks_ids)
-    return flat_tracks_ids
+    flat_tracks_ids = dict_tracks_weaved
+    print(dict_tracks_weaved)
+    return dict_tracks_weaved

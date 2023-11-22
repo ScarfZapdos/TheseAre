@@ -11,18 +11,21 @@
     <title>TheseAre</title>
 </head>
 <body class="h-screen bg-white dark:bg-gray-900 dark:text-white text-center">
-    <h1 class="text-amber-500 text-3xl"><b>Helper</b></h1>
-    <div id="app">
+    <h1 class="h-16 text-amber-500 text-3xl"><b>Helper</b></h1>
+    <div id="app" class="w-4/5 h-96 bg-gray-800 border rounded-lg mx-auto">
 
         <div id="suggestionContainer" style="display: none;">
-            <h2>Suggested Track:</h2>
-            <div id="suggestionInfo">
-                <!-- Display track information here -->
+            <div class="h-4">
             </div>
+            <div class="h-96 flex flex-col content-between">
+                <div id="suggestionInfo" class="text-3xl">
+                    <!-- Display track information here -->
+                </div>
 
-            <div id="interactionButtons">
-                <button id="addTrackBtn">Add to Playlist</button>
-                <button id="skipTrackBtn">Skip</button>
+                <div id="interactionButtons" class="w-4/5 flex flex-row px-16 place-content-around">
+                    <button id="addTrackBtn" class="w-2/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:border-gray-600 focus:ring-gray-700">Add to Playlist</button>
+                    <button id="skipTrackBtn" class="w-2/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:border-gray-600 focus:ring-gray-700">Skip</button>
+                </div>
             </div>
         </div>
     </div>
@@ -37,65 +40,63 @@
     var socket = io();
     var tracklist;
 
-    socket.onAny((event, ...args) => {
-  console.log(event, args);
-    });
-    
     const suggestionContainer = document.getElementById('suggestionContainer');
     const suggestionInfo = document.getElementById('suggestionInfo');
     const addTrackBtn = document.getElementById('addTrackBtn');
     const skipTrackBtn = document.getElementById('skipTrackBtn');
 
     let currentSuggestionIndex = 0;
-    let suggestions = []; // Store suggestions here
+    let track_reviewed = [];
 
-    document.addEventListener("DOMContentLoaded", function(){
-        // Fetch suggestions from the backend (replace with your actual endpoint)
-        fetch('/get_track_i', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                index: currentSuggestionIndex/* get artists from form */
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            suggestions = data.suggestions;
-            showSuggestion();
-        })
-        .catch(error => console.error('Error fetching suggestions:', error));
+    function delay(time) {
+        return new Promise(resolve => setTimeout(resolve, time));
+    }
+    socket.on("startup", (tl) => {
+        console.log("Connected :")
+        console.log(tl);
+        console.log(Object.keys(tl).length);
+        tracklist = tl;
     });
 
+    socket.on("response_next_track", (track_name, track_artists, track_album, track_cover, track_audio) => {
+        track_reviewed = [track_name, track_artists, track_album, track_cover, track_audio];
+        console.log("Received track");
+        console.log(track_name);
+        console.log(track_artists);
+        console.log(track_album);
+        console.log(track_cover);
+        console.log(track_audio);
+        console.log(track_reviewed);
+        showSuggestion();
+    });
+
+    socket.emit("next_track", currentSuggestionIndex);
     addTrackBtn.addEventListener('click', function() {
         // Add current track to the playlist (you may want to send this to the backend)
         // For example: addToPlaylist(suggestions[currentSuggestionIndex]);
 
         // Show the next suggestion
         currentSuggestionIndex++;
-        showSuggestion();
     });
 
     skipTrackBtn.addEventListener('click', function() {
         // Skip to the next suggestion without adding to the playlist
         currentSuggestionIndex++;
-        showSuggestion();
+        socket.emit("next_track", currentSuggestionIndex);
     });
 
     function showSuggestion() {
-        if (currentSuggestionIndex < suggestions.length) {
-            const suggestion = suggestions[currentSuggestionIndex];
+        if (currentSuggestionIndex < Object.keys(tracklist).length) {
             suggestionInfo.innerHTML = `
-                <img src="${suggestion.cover}" alt="Album Cover">
-                <p>${suggestion.name} - ${suggestion.artist}</p>
-                <p>Album: ${suggestion.album}</p>
-                <audio controls>
-                    <source src="${suggestion.preview_url}" type="audio/mp3">
+                <img src="${track_reviewed[3]}" alt="Album Cover" style="float:right;padding:10px;width:300px;height:300px;">
+                <p>${track_reviewed[0]} - ${track_reviewed[1]}</p>
+                <p>Album: ${track_reviewed[2]}</p>
+                <br><br>
+                <audio class="block w-full max-w-md mx-auto" controls>
+                    <source src="${track_reviewed[4]}" type="audio/mp3">
                     Your browser does not support the audio tag.
                 </audio>
             `;
-
             suggestionContainer.style.display = 'block';
         } else {
             // No more suggestions, display a message or handle as needed

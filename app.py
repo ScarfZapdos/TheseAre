@@ -1,5 +1,5 @@
 from flask import Flask, redirect, request, render_template, session
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO, send, emit
 import subprocess
 import requests
 import json
@@ -74,6 +74,7 @@ def startprogram():
         tracks_count_per_artist = int(request.form['tracks_number_input'])
         flat_tracks_ids = helper.get_most_tracks(TOKTOKEN, artists, tracks_count_per_artist)
         session["flat_tracks_ids"] = flat_tracks_ids
+        session["flat_tracks_ids_list"] = list(flat_tracks_ids.values())
         return redirect('helperrun')
     return f"Program not recognised..."
 
@@ -98,7 +99,30 @@ def get_track_i():
 
 @socketio.on('connect')
 def send_tracklist():
-    send(session["flat_tracks_ids"])
+    emit("startup", session["flat_tracks_ids"])
+
+@socketio.on('next_track')
+def send_nexttrack(i):
+    response_code, track_info = add_all_tracks.get_track(TOKTOKEN, session["flat_tracks_ids_list"][i][14:])
+    print(session["flat_tracks_ids_list"][i][14:])
+
+    #Get track name
+    track_name = track_info["name"]
+
+    #Get Artists names
+    artists_names = []
+    for artist in track_info["artists"]:
+        artists_names.append(artist["name"])
+
+    #Get album name
+    album_name = track_info["album"]["name"]
+
+    #Get album cover
+    album_cover = track_info["album"]["images"][0]["url"]
+
+    #Get audio url
+    audio_url = track_info["preview_url"] 
+    emit("response_next_track",(track_name, artists_names, album_name, album_cover, audio_url))
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

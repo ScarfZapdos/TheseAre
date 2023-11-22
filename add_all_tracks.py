@@ -30,6 +30,19 @@ def search_artists(access_token, artists):
         artists_ids[search_result_name] = search_result_id
     return artists_ids
 
+def get_track(access_token, track_id):
+    #Build HTTP Request
+    tracks_ids = {}
+    url = f"https://api.spotify.com/v1/tracks/{track_id}"
+    header = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url=url, headers=header)
+    print(response.json())
+    if response.status_code != 200:
+        return response.status_code, None
+    else:
+        return response.status_code, response.json()
+
+
 def get_artist_tracks(access_token, artist, tracks_count_per_artist):
     #Build HTTP Request
     tracks_ids = {}
