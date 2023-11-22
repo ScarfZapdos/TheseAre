@@ -30,7 +30,8 @@ def search_artists(access_token, artists):
         artists_ids[search_result_name] = search_result_id
     return artists_ids
 
-def get_artist_tracks(access_token, artist):
+def get_artist_tracks(access_token, artist, tracks_count_per_artist):
+    #Build HTTP Request
     tracks_ids = {}
     url = "https://api.spotify.com/v1/search"
     header = {"Authorization": f"Bearer {access_token}"}
@@ -41,6 +42,7 @@ def get_artist_tracks(access_token, artist):
             "offset":"0"}
     response = requests.get(url=url, headers=header, params=body)
     next_url = url
+    #Get tracks loop, 50 per call
     while next_url != None:
         if next_url != url:
             response = requests.get(url=next_url, headers=header)
@@ -56,6 +58,8 @@ def get_artist_tracks(access_token, artist):
                     search_result_name = track["name"]
                     search_result_id = track["uri"]
                     tracks_ids[search_result_name] = search_result_id
+                    if tracks_count_per_artist != -1 and len(tracks_ids) >= tracks_count_per_artist:
+                        return response.status_code, tracks_ids
             next_url = response.json()["tracks"]["next"]
     return response.status_code, tracks_ids    
 
@@ -95,7 +99,7 @@ def get_current_user(access_token):
     else:
         return response.status_code,response.json()["id"]
 
-def get_user_playground(access_token, user_id, playlist_name):
+def get_user_playground(access_token, user_id, playlist_name, program, pretty_artists_list):
     header = {"Authorization": f"Bearer {access_token}"}
     url = f"https://api.spotify.com/v1/users/{user_id}/playlists?offset=0&limit=50"
     return_playlist = {}
@@ -114,7 +118,7 @@ def get_user_playground(access_token, user_id, playlist_name):
         url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
         header["Content-Type"] = "application/json"
         body = {"name":playlist_name,
-            "description":"Created with The Completionist from Hugo's wonderful app"}
+            "description":f"Created with {program} from Hugo's wonderful app, using the best of {pretty_artists_list}"}
         response = requests.post(url=url, headers=header, json=body)
         return_playlist = response.json()
     return return_playlist
@@ -126,15 +130,22 @@ def add_to_playground(access_token, playground_id, uri_array):
     response = requests.post(url=url, headers=header, json=body)
     print(f"Added ? : {response.status_code} : {response.text}")
     
+def pretty_list(L):
+    ret = ""
+    for i, e in enumerate(L):
+        if i == len(L)-1:
+            ret += f" and {e}"
+        else:
+            ret += f"{e}, "
+    return ret
 
-def main(token, playlist_name, artists_list):
-
+def mainstreambestof(token, playlist_name, artists_list, tracks_count_per_artist):
     user_id = "21vksa4dfx6ba2r4zyfwjuyqa"
-    playground = get_user_playground(token, user_id, playlist_name)
+    playground = get_user_playground(token, user_id, playlist_name, "The Mainstream BestOf", pretty_list(artists_list))
     artists_ids = search_artists(token, artists_list)
     tracks_ids = {}
     for index, artist in enumerate(artists_ids):
-        _ , tracks_ids[artist] = get_artist_tracks(token, artists_list[index])
+        _ , tracks_ids[artist] = get_artist_tracks(token, artists_list[index], tracks_count_per_artist)
     json.dump(tracks_ids, file, indent=4)
     flat_tracks_ids = []
     counter = 0
@@ -144,4 +155,23 @@ def main(token, playlist_name, artists_list):
         lacunar_flat_tracks = flat_tracks_ids[k*90:90+k*90]
         counter += len(lacunar_flat_tracks)
         add_to_playground(token, playground["id"], lacunar_flat_tracks)
-    return counter
+    return counter, pretty_list(artists_list)
+
+def completionist(token, playlist_name, artists_list):
+
+    user_id = "21vksa4dfx6ba2r4zyfwjuyqa"
+    playground = get_user_playground(token, user_id, playlist_name, "The Completionist", pretty_list(artists_list))
+    artists_ids = search_artists(token, artists_list)
+    tracks_ids = {}
+    for index, artist in enumerate(artists_ids):
+        _ , tracks_ids[artist] = get_artist_tracks(token, artists_list[index], -1)
+    json.dump(tracks_ids, file, indent=4)
+    flat_tracks_ids = []
+    counter = 0
+    for artist_tracks in tracks_ids.values():
+        flat_tracks_ids.extend(artist_tracks.values())
+    for k in range(math.floor(len(flat_tracks_ids)/90)+1):
+        lacunar_flat_tracks = flat_tracks_ids[k*90:90+k*90]
+        counter += len(lacunar_flat_tracks)
+        add_to_playground(token, playground["id"], lacunar_flat_tracks)
+    return counter, pretty_list(artists_list)

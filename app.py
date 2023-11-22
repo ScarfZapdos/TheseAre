@@ -1,12 +1,14 @@
-from flask import Flask, redirect, request, render_template
+from flask import Flask, redirect, request, render_template, session
 import subprocess
 import requests
 import json
 import sys
 sys.path.insert(0, "..")
 import add_all_tracks
+import helper
 
 app = Flask(__name__)
+app.secret_key = 'secretnotrlysecretfornow'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 CLIENT_ID = '0356a0d5fd974f4497a212601fa2b636'
@@ -60,18 +62,31 @@ def startprogram():
     playlist = request.form['playlist']
     artists = request.form.getlist('artists')
     if program == "completionist":
-        counter = add_all_tracks.main(TOKTOKEN, playlist, artists)
-    return f"Congratulations ! The Completionist has created a playlist of {counter} tracks of the artists {artists} in your profile."
+        counter, pretty_artists_list = add_all_tracks.completionist(TOKTOKEN, playlist, artists)
+        return f"Congratulations ! The Completionist has created a playlist of {counter} tracks of the artists {pretty_artists_list} in your profile."
+    elif program == "bestof":
+        tracks_count_per_artist = int(request.form['tracks_number_input'])
+        counter, pretty_artists_list = add_all_tracks.mainstreambestof(TOKTOKEN, playlist, artists, tracks_count_per_artist)
+        return f"Congratulations ! The MainstreamBestOf has created a playlist of {counter} tracks of the artists {pretty_artists_list} in your profile."
+    elif program == "creatorhelper":
+        tracks_count_per_artist = int(request.form['tracks_number_input'])
+        flat_tracks_ids = helper.get_most_tracks(TOKTOKEN, playlist, artists, tracks_count_per_artist)
+        session["flat_tracks_ids"] = flat_tracks_ids
+        return redirect('helperrun')
+    return f"Program not recognised..."
 
-@app.route('/startprograms', methods=['POST'])
-def startprograms():
-    global TOKTOKEN
-    program = request.form['program']
-    playlist = request.form['playlist']
-    artists = request.form.getlist('artists')
-    if program == "completionist":
-        ret = add_all_tracks.get_user_playground(TOKTOKEN, "21vksa4dfx6ba2r4zyfwjuyqa", playlist)
-    return f"Congratulations ! The Completionist has created a playlist of ID {ret}"
+@app.route('/helperrun')
+def helperrun():
+    return render_template('helper.html')
+# @app.route('/startprograms', methods=['POST'])
+# def startprograms():
+#     global TOKTOKEN
+#     program = request.form['program']
+#     playlist = request.form['playlist']
+#     artists = request.form.getlist('artists')
+#     if program == "completionist":
+#         ret = add_all_tracks.get_user_playground(TOKTOKEN, "21vksa4dfx6ba2r4zyfwjuyqa", playlist)
+#     return f"Congratulations ! The Completionist has created a playlist of ID {ret}"
 
 if __name__ == '__main__':
     app.run(debug=True)
