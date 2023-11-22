@@ -1,4 +1,5 @@
 from flask import Flask, redirect, request, render_template, session
+from flask_socketio import SocketIO, send
 import subprocess
 import requests
 import json
@@ -9,6 +10,7 @@ import helper
 
 app = Flask(__name__)
 app.secret_key = 'secretnotrlysecretfornow'
+socketio = SocketIO(app)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 CLIENT_ID = '0356a0d5fd974f4497a212601fa2b636'
@@ -70,7 +72,7 @@ def startprogram():
         return f"Congratulations ! The MainstreamBestOf has created a playlist of {counter} tracks of the artists {pretty_artists_list} in your profile."
     elif program == "creatorhelper":
         tracks_count_per_artist = int(request.form['tracks_number_input'])
-        flat_tracks_ids = helper.get_most_tracks(TOKTOKEN, playlist, artists, tracks_count_per_artist)
+        flat_tracks_ids = helper.get_most_tracks(TOKTOKEN, artists, tracks_count_per_artist)
         session["flat_tracks_ids"] = flat_tracks_ids
         return redirect('helperrun')
     return f"Program not recognised..."
@@ -78,6 +80,12 @@ def startprogram():
 @app.route('/helperrun')
 def helperrun():
     return render_template('helper.html')
+
+@app.route('/get_track_i')
+def get_track_i():
+    if request.method == 'POST':
+        data = request.get_json()
+
 # @app.route('/startprograms', methods=['POST'])
 # def startprograms():
 #     global TOKTOKEN
@@ -88,5 +96,9 @@ def helperrun():
 #         ret = add_all_tracks.get_user_playground(TOKTOKEN, "21vksa4dfx6ba2r4zyfwjuyqa", playlist)
 #     return f"Congratulations ! The Completionist has created a playlist of ID {ret}"
 
+@socketio.on('connect')
+def send_tracklist():
+    send(session["flat_tracks_ids"])
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
