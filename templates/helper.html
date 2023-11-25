@@ -13,7 +13,7 @@
 <body class="h-screen bg-white dark:bg-gray-900 dark:text-white text-center">
     <h1 class="h-16 text-amber-500 text-3xl"><b>Helper</b></h1>
     <div id="app" class="w-4/5 h-96 bg-gray-800 border rounded-lg mx-auto">
-
+        <div id="endContainer" style="display: none;"></div>
         <div id="suggestionContainer" style="display: none;">
             <div class="h-4">
             </div>
@@ -23,8 +23,9 @@
                 </div>
 
                 <div id="interactionButtons" class="w-4/5 flex flex-row px-16 place-content-around">
-                    <button id="addTrackBtn" class="w-2/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:border-gray-600 focus:ring-gray-700">Add to Playlist</button>
-                    <button id="skipTrackBtn" class="w-2/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:border-gray-600 focus:ring-gray-700">Skip</button>
+                    <button id="addTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-gray-800 hover:border-gray-600 focus:ring-gray-700">Add to Playlist</button>
+                    <button id="skipTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-gray-800 hover:border-gray-600 focus:ring-gray-700">Skip</button>
+                    <button id="endTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-red-800 hover:border-gray-600 focus:ring-gray-700">End</button>
                 </div>
             </div>
         </div>
@@ -47,6 +48,7 @@
 
     let currentSuggestionIndex = 0;
     let track_reviewed = [];
+    let endMessage = "";
 
     function delay(time) {
         return new Promise(resolve => setTimeout(resolve, time));
@@ -70,19 +72,36 @@
         showSuggestion();
     });
 
-    socket.emit("next_track", currentSuggestionIndex);
+    socket.on("time_to_end", () => {
+        socket.emit("end_helper");
+    });
+
+    socket.on("ok_helper", (em) => {
+        endMessage = em;
+        showEnd();
+    });
+    
+
+    socket.emit("next_track", currentSuggestionIndex, "first");
+    
     addTrackBtn.addEventListener('click', function() {
         // Add current track to the playlist (you may want to send this to the backend)
         // For example: addToPlaylist(suggestions[currentSuggestionIndex]);
 
         // Show the next suggestion
         currentSuggestionIndex++;
+        socket.emit("next_track", currentSuggestionIndex, "add");
     });
 
     skipTrackBtn.addEventListener('click', function() {
         // Skip to the next suggestion without adding to the playlist
         currentSuggestionIndex++;
-        socket.emit("next_track", currentSuggestionIndex);
+        socket.emit("next_track", currentSuggestionIndex, "skip");
+    });
+    
+    endTrackBtn.addEventListener('click', function() {
+        // Skip to the next suggestion without adding to the playlist
+        socket.emit("end_helper");
     });
 
     function showSuggestion() {
@@ -102,5 +121,11 @@
             // No more suggestions, display a message or handle as needed
             suggestionContainer.style.display = 'none';
         }
+    }
+
+    function showEnd() {
+        suggestionContainer.style.display = 'none';
+        endContainer.innerHTML = `<h2 class="h-8 text-amber-500 text-3xl"> ${endMessage} </h2>`
+        endContainer.style.display = "block";
     }
 </script>

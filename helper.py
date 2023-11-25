@@ -1,4 +1,5 @@
 import add_all_tracks as aat
+import math
 import json
 
 def get_most_tracks(token, artists_list, tracks_count_per_artist):
@@ -23,3 +24,13 @@ def get_most_tracks(token, artists_list, tracks_count_per_artist):
     flat_tracks_ids = dict_tracks_weaved
     print(dict_tracks_weaved)
     return dict_tracks_weaved
+
+def helper_final(token, playlist_name, artists_list, tracklist):
+    user_id = "21vksa4dfx6ba2r4zyfwjuyqa"
+    counter = 0
+    playground = aat.get_user_playground(token, user_id, playlist_name, "The Creator Helper", aat.pretty_list(artists_list))
+    for k in range(math.floor(len(tracklist)/90)+1):
+        lacunar_flat_tracks = tracklist[k*90:90+k*90]
+        counter += len(lacunar_flat_tracks)
+        aat.add_to_playground(token, playground["id"], lacunar_flat_tracks)
+    return counter, aat.pretty_list(artists_list)

@@ -36,7 +36,7 @@ def get_track(access_token, track_id):
     url = f"https://api.spotify.com/v1/tracks/{track_id}"
     header = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url=url, headers=header)
-    print(response.json())
+    #print(response.json())
     if response.status_code != 200:
         return response.status_code, None
     else:
@@ -83,7 +83,7 @@ def get_access_token():
             "client_id":"0356a0d5fd974f4497a212601fa2b636", 
             "client_secret":"0490e9dd613344979d6b1b68c82000f9"}
     response = requests.post(url=url, headers=header, data=body)
-    print(f"Token : {response.json()}")
+    #print(f"Token : {response.json()}")
     if response.status_code != 200:
         return response.status_code, None
     else:
@@ -96,7 +96,7 @@ def get_authorization():
             "redirect_uri":"http://localhost:5000/callback",
             'scope': 'playlist-modify-private'}
     response = requests.post(url=url, data=body)
-    print(response.status_code, response)
+    #print(response.status_code, response)
     if response.status_code != 200:
         return response.status_code, None
     else:
@@ -119,8 +119,8 @@ def get_user_playground(access_token, user_id, playlist_name, program, pretty_ar
     while url != None:
         response = requests.get(url=url, headers=header)
         #print(f"User Playlists : {response.json()}")
-        print(f"URL : {url}, header : {header}")
-        print(f"response code : {response.status_code}")
+        #print(f"URL : {url}, header : {header}")
+        #print(f"response code : {response.status_code}")
         if response.status_code == 200:
             for playlist in response.json()["items"]:
                 if playlist["name"] == playlist_name:
@@ -141,13 +141,17 @@ def add_to_playground(access_token, playground_id, uri_array):
     header = {"Authorization": f"Bearer {access_token}"}
     body = {"uris":uri_array}
     response = requests.post(url=url, headers=header, json=body)
-    print(f"Added ? : {response.status_code} : {response.text}")
+    #print(f"Added ? : {response.status_code} : {response.text}")
     
 def pretty_list(L):
     ret = ""
+    if len(L) == 1:
+        return L[0]
     for i, e in enumerate(L):
         if i == len(L)-1:
             ret += f" and {e}"
+        elif i == len(L)-2:
+            ret += f"{e} "
         else:
             ret += f"{e}, "
     return ret
