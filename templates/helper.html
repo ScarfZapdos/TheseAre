@@ -10,22 +10,25 @@
       </svg>" rel="icon">
     <title>TheseAre</title>
 </head>
-<body class="h-screen bg-white dark:bg-gray-900 dark:text-white text-center">
-    <h1 class="h-16 text-amber-500 text-3xl"><b>Helper</b></h1>
-    <div id="app" class="w-4/5 h-96 bg-gray-800 border rounded-lg mx-auto">
-        <div id="endContainer" style="display: none;"></div>
-        <div id="suggestionContainer" style="display: none;">
-            <div class="h-4">
-            </div>
-            <div class="h-96 flex flex-col content-between">
-                <div id="suggestionInfo" class="text-3xl">
-                    <!-- Display track information here -->
+<body class="relative h-screen bg-white dark:bg-gray-900 dark:text-white text-center">
+    <div class="flex flex-row flex-nowrap">
+        <div id="tracklistContainer" class="flex flex-col w-4/12 bg-gray-900 mx-auto space-y-2">
+        </div>
+        <div id="app" class="w-7/12 h-96 bg-gray-800 border rounded-lg mx-auto">
+            <div id="endContainer" style="display: none;"></div>
+            <div id="suggestionContainer" style="display: none;">
+                <div class="h-4">
                 </div>
+                <div class="h-96 flex flex-col content-between">
+                    <div id="suggestionInfo" class="text-3xl">
+                        <!-- Display track information here -->
+                    </div>
 
-                <div id="interactionButtons" class="w-4/5 flex flex-row px-16 place-content-around">
-                    <button id="addTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-gray-800 hover:border-gray-600 focus:ring-gray-700">Add to Playlist</button>
-                    <button id="skipTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-gray-800 hover:border-gray-600 focus:ring-gray-700">Skip</button>
-                    <button id="endTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-red-800 hover:border-gray-600 focus:ring-gray-700">End</button>
+                    <div id="interactionButtons" class="w-4/5 flex flex-row px-16 place-content-around">
+                        <button id="addTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-gray-800 hover:border-gray-600 focus:ring-gray-700">Add to Playlist</button>
+                        <button id="skipTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-gray-800 hover:border-gray-600 focus:ring-gray-700">Skip</button>
+                        <button id="endTrackBtn" class="w-1/5 border font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 bg-gray-900 text-white border-gray-600 hover:bg-red-800 hover:border-gray-600 focus:ring-gray-700">End</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,7 +44,9 @@
     var socket = io();
     var tracklist;
 
+    const tracklistContainer = document.getElementById('tracklistContainer');
     const suggestionContainer = document.getElementById('suggestionContainer');
+    const endContainer = document.getElementById('endContainer');
     const suggestionInfo = document.getElementById('suggestionInfo');
     const addTrackBtn = document.getElementById('addTrackBtn');
     const skipTrackBtn = document.getElementById('skipTrackBtn');
@@ -62,13 +67,6 @@
 
     socket.on("response_next_track", (track_name, track_artists, track_album, track_cover, track_audio) => {
         track_reviewed = [track_name, track_artists, track_album, track_cover, track_audio];
-        console.log("Received track");
-        console.log(track_name);
-        console.log(track_artists);
-        console.log(track_album);
-        console.log(track_cover);
-        console.log(track_audio);
-        console.log(track_reviewed);
         showSuggestion();
     });
 
@@ -85,12 +83,10 @@
     socket.emit("next_track", currentSuggestionIndex, "first");
     
     addTrackBtn.addEventListener('click', function() {
-        // Add current track to the playlist (you may want to send this to the backend)
-        // For example: addToPlaylist(suggestions[currentSuggestionIndex]);
-
         // Show the next suggestion
         currentSuggestionIndex++;
         socket.emit("next_track", currentSuggestionIndex, "add");
+        addToTracklist();
     });
 
     skipTrackBtn.addEventListener('click', function() {
@@ -121,6 +117,14 @@
             // No more suggestions, display a message or handle as needed
             suggestionContainer.style.display = 'none';
         }
+    }
+
+    function addToTracklist() {
+        let track = document.createElement("div");
+        track.className = "flex flex-row h-14 bg-gray-800 border rounded-lg mx-auto w-full";
+        track.innerHTML = `<h2 class="w-4/5 text-amber-500 text-2xl text-left ml-2"> ${track_reviewed[0]} - ${track_reviewed[1]} </h2>
+                <img src="${track_reviewed[3]}" alt="Album Cover" style="float:right;">`;
+        tracklistContainer.appendChild(track);
     }
 
     function showEnd() {
