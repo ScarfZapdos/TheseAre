@@ -30,7 +30,7 @@ def authenticate():
         'client_id': CLIENT_ID,
         'response_type': 'code',
         'redirect_uri': REDIRECT_URI,
-        'scope': 'playlist-modify-private playlist-modify-public'
+        'scope': 'playlist-modify-private playlist-modify-public user-library-read'
     }
     auth_url = f"{AUTHORIZE_URL}?{'&'.join([f'{key}={value}' for key, value in auth_params.items()])}"
     #print(auth_url)
@@ -56,6 +56,16 @@ def callback():
     #print(access_token)
     TOKTOKEN = access_token
     return redirect('/')
+
+@app.route('/likedtracks', methods=['POST'])
+def find_all_liked_tracks():
+    global TOKTOKEN
+    code, track_list = add_all_tracks.get_liked_tracks(TOKTOKEN)
+    if code == 200:
+        return track_list
+    else:
+        return "dafuq"
+    # return render_template('likedtracks.html')
 
 @app.route('/startprogram', methods=['POST'])
 def startprogram():

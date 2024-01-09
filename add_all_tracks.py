@@ -2,9 +2,6 @@ import requests
 import json
 import math
 
-#prompted_playground_name = "G. Showcase"
-#prompted_artists_list = ["AJR", "BLACKPINK", "Imagine Dragons"]
-prompted_client_id = '0356a0d5fd974f4497a212601fa2b636'
 file = open("tracks.json", "w")
 
 def search_artist(access_token, artist):
@@ -42,6 +39,27 @@ def get_track(access_token, track_id):
     else:
         return response.status_code, response.json()
 
+def get_liked_tracks(access_token):
+    #Build HTTP Request
+    tracks_ids = []
+    url = "https://api.spotify.com/v1/me/tracks?market=FR&limit=50&offset=0"
+    header = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url=url, headers=header)
+    print(response)
+    print(header)
+    next_url = url
+    #Get tracks loop, 50 per call
+    while next_url != None:
+        if next_url != url:
+            response = requests.get(url=next_url, headers=header)
+        #print(response.status_code)
+        if response.status_code != 200:
+            return response.status_code, None
+        else:
+            for track in response.json()["items"]:
+                tracks_ids.append(track["track"]["id"])
+            next_url = response.json()["next"]
+    return response.status_code, tracks_ids  
 
 def get_artist_tracks(access_token, artist, tracks_count_per_artist):
     #Build HTTP Request
@@ -76,31 +94,31 @@ def get_artist_tracks(access_token, artist, tracks_count_per_artist):
             next_url = response.json()["tracks"]["next"]
     return response.status_code, tracks_ids    
 
-def get_access_token():
-    url = "https://accounts.spotify.com/api/token"
-    header = {"Content-Type" : "application/x-www-form-urlencoded"}
-    body = {"grant_type":"client_credentials", 
-            "client_id":"0356a0d5fd974f4497a212601fa2b636", 
-            "client_secret":"0490e9dd613344979d6b1b68c82000f9"}
-    response = requests.post(url=url, headers=header, data=body)
-    #print(f"Token : {response.json()}")
-    if response.status_code != 200:
-        return response.status_code, None
-    else:
-        return response.status_code,response.json()["access_token"]
+# def get_access_token():
+#     url = "https://accounts.spotify.com/api/token"
+#     header = {"Content-Type" : "application/x-www-form-urlencoded"}
+#     body = {"grant_type":"client_credentials", 
+#             "client_id":"0356a0d5fd974f4497a212601fa2b636", 
+#             "client_secret":"0490e9dd613344979d6b1b68c82000f9"}
+#     response = requests.post(url=url, headers=header, data=body)
+#     #print(f"Token : {response.json()}")
+#     if response.status_code != 200:
+#         return response.status_code, None
+#     else:
+#         return response.status_code,response.json()["access_token"]
 
-def get_authorization():
-    url = "https://accounts.spotify.com/authorize"
-    body = {"client_id":"0356a0d5fd974f4497a212601fa2b636",
-            "response_type":"code",
-            "redirect_uri":"http://localhost:5000/callback",
-            'scope': 'playlist-modify-private'}
-    response = requests.post(url=url, data=body)
-    #print(response.status_code, response)
-    if response.status_code != 200:
-        return response.status_code, None
-    else:
-        return response.status_code,response.json()["access_token"]
+# def get_authorization():
+#     url = "https://accounts.spotify.com/authorize"
+#     body = {"client_id":"0356a0d5fd974f4497a212601fa2b636",
+#             "response_type":"code",
+#             "redirect_uri":"http://localhost:5000/callback",
+#             'scope': 'playlist-modify-private user-library-read'}
+#     response = requests.post(url=url, data=body)
+#     #print(response.status_code, response)
+#     if response.status_code != 200:
+#         return response.status_code, None
+#     else:
+#         return response.status_code,response.json()["access_token"]
 
 def get_current_user(access_token):
     url = "https://api.spotify.com/v1/me"
