@@ -58,14 +58,17 @@ def callback():
     return redirect('/')
 
 @app.route('/likedtracks', methods=['POST'])
+def render_liked_tracks():
+        return render_template('likedtracks.html')
+
+@socketio.on('find_all_liked')
 def find_all_liked_tracks():
     global TOKTOKEN
     code, track_list = add_all_tracks.get_liked_tracks(TOKTOKEN)
-    if code == 200:
-        return track_list
-    else:
+    if code != 200:
         return "dafuq"
-    # return render_template('likedtracks.html')
+    else:  
+        emit("found_liked", track_list)
 
 @app.route('/startprogram', methods=['POST'])
 def startprogram():
@@ -111,8 +114,32 @@ def get_track_i():
 #     return f"Congratulations ! The Completionist has created a playlist of ID {ret}"
 
 @socketio.on('connect')
+def connexion():
+    emit("startup")
+    
+@socketio.on('send_tracklist')
 def send_tracklist():
-    emit("startup", session["flat_tracks_ids"])
+    emit("tracklisted", session["flat_tracks_ids"])
+
+@socketio.on('fetch_track_infos')
+def send_liked_infos(arr):
+    infos = []
+    for track in arr:
+        response_code, track_info = add_all_tracks.get_track(TOKTOKEN, track)
+        #Get track name
+        track_name = track_info["name"]
+        #Get Artists names
+        artists_names = []
+        for artist in track_info["artists"]:
+            artists_names.append(artist["name"])
+        #Get album name
+        album_name = track_info["album"]["name"]
+        #Get album cover
+        album_cover = track_info["album"]["images"][0]["url"]
+        #Get audio url
+        audio_url = track_info["preview_url"]
+        infos.append([track_name, artists_names, album_name, album_cover, audio_url])
+    emit("response_fetch_track_infos", infos)
 
 @socketio.on('next_track')
 def send_nexttrack(i, comm):

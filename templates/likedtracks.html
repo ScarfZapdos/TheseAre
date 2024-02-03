@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{url_for('static',filename='./dist/output.css')}}" rel="stylesheet">
+    <link href="data:image/svg+xml;utf8,<svg class='w-6 h-6 text-gray-800 dark:text-white' aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 0 18 16'>
+        <path d='M14.316.051A1 1 0 0 0 13 1v8.473A4.49 4.49 0 0 0 11 9c-2.206 0-4 1.525-4 3.4s1.794 3.4 4 3.4 4-1.526 4-3.4a2.945 2.945 0 0 0-.067-.566c.041-.107.064-.22.067-.334V2.763A2.974 2.974 0 0 1 16 5a1 1 0 0 0 2 0C18 1.322 14.467.1 14.316.051ZM10 3H1a1 1 0 0 1 0-2h9a1 1 0 1 1 0 2Z'/>
+        <path d='M10 7H1a1 1 0 0 1 0-2h9a1 1 0 1 1 0 2Zm-5 4H1a1 1 0 0 1 0-2h4a1 1 0 1 1 0 2Z'/>
+      </svg>" rel="icon">
+    <title>TheseAre</title>
+</head>
+<body class="relative h-screen bg-white dark:bg-gray-900 dark:text-white text-center">
+    <div class="flex flex-row flex-nowrap">
+        <div id="tracklistContainer" class="flex flex-col w-11/12 bg-gray-900 mx-auto space-y-2">
+        </div>
+    </div>
+    <div class="h-4 w-full">
+        <img class="fixed bottom-0 w-full" src="{{url_for('static',filename='./footpage.png')}}"/>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
+</body>
+</html>
+<script type="text/javascript" charset="utf-8">
+    var socket = io();
+    var tracklist;
+
+    const tracklistContainer = document.getElementById('tracklistContainer');
+
+    let currentIndex = 0;
+    let track_reviewed = [];
+    let endMessage = "";
+
+    function delay(time) {
+        return new Promise(resolve => setTimeout(resolve, time));
+    }
+
+    socket.on("startup", () => {
+        socket.emit("find_all_liked");
+    });
+
+    socket.on("found_liked", (tl) => {
+        console.log("Found Liked")
+        console.log(Object.keys(tl).length);
+        console.log(tl);
+        tracklist = tl;
+        socket.emit("fetch_track_infos", tl.slice(currentIndex*10, (currentIndex+1)*10));
+    });
+
+    socket.on("response_fetch_track_infos", (infos) => {
+        for(const info in infos)
+            track_reviewed = [info[0], info[1], info[2], info[3], info[4]];
+    });
+
+    socket.on("transit_tracks", (track_name, track_artists, track_album, track_cover, track_audio) => {
+        track_reviewed = [track_name, track_artists, track_album, track_cover, track_audio];
+        showSuggestion();
+    });
+
+function addToTracklist() {
+    let track = document.createElement("div");
+    track.className = "flex flex-row h-14 bg-gray-800 border rounded-lg mx-auto w-full";
+    track.innerHTML = `<h2 class="w-4/5 text-amber-500 text-2xl text-left ml-2"> ${track_reviewed[0]} - ${track_reviewed[1]} </h2>
+            <img src="${track_reviewed[3]}" alt="Album Cover" style="float:right;">`;
+    tracklistContainer.appendChild(track);
+}
+</script>

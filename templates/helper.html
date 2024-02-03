@@ -58,8 +58,13 @@
     function delay(time) {
         return new Promise(resolve => setTimeout(resolve, time));
     }
-    socket.on("startup", (tl) => {
-        console.log("Connected :")
+
+    socket.on("startup" ,() => {
+        console.log("Connected")
+        socket.emit("send_tracklist")
+    });
+
+    socket.on("tracklisted", (tl) => {
         console.log(tl);
         console.log(Object.keys(tl).length);
         tracklist = tl;
